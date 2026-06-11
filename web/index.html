@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniPLC - Universal Protocol Translator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --bg-card-hover: rgba(255, 255, 255, 0.05);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+            --accent-blue: #3b82f6;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-purple: #8b5cf6;
+            --gradient-1: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+            --gradient-2: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+            --glow-blue: 0 0 40px rgba(59, 130, 246, 0.3);
+            --glow-green: 0 0 40px rgba(16, 185, 129, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .bg-glow {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .bg-glow-1 {
+            top: -200px;
+            right: -200px;
+            background: var(--accent-blue);
+        }
+
+        .bg-glow-2 {
+            bottom: -200px;
+            left: -200px;
+            background: var(--accent-purple);
+        }
+
+        /* Layout */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--gradient-1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: var(--glow-blue);
+        }
+
+        .logo h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo p {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 100px;
+            font-size: 0.875rem;
+            color: var(--accent-green);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Hero Stats */
+        .hero-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            background: var(--bg-card-hover);
+            transform: translateY(-2px);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .stat-value.blue { color: var(--accent-blue); }
+        .stat-value.green { color: var(--accent-green); }
+        .stat-value.orange { color: var(--accent-orange); }
+        .stat-value.purple { color: var(--accent-purple); }
+
+        /* Section Title */
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .section-title .line {
+            flex: 1;
+            height: 1px;
+            background: var(--border-color);
+        }
+
+        /* Demo Button */
+        .demo-btn {
+            background: var(--gradient-1);
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--glow-blue);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .demo-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 60px rgba(59, 130, 246, 0.4);
+        }
+
+        .demo-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Machines Grid */
+        .machines-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .machine-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .machine-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-1);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .machine-card.active::before {
+            opacity: 1;
+        }
+
+        .machine-card.active {
+            border-color: rgba(59, 130, 246, 0.3);
+            box-shadow: var(--glow-blue);
+        }
+
+        .machine-card.success {
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .machine-card.success::before {
+            background: var(--accent-green);
+            opacity: 1;
+        }
+
+        .machine-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .machine-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .machine-icon.modbus { background: rgba(239, 68, 68, 0.15); }
+        .machine-icon.s7comm { background: rgba(139, 92, 246, 0.15); }
+        .machine-icon.opcua { background: rgba(6, 182, 212, 0.15); }
+
+        .machine-name {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .machine-protocol {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .machine-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .machine-status.waiting {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+        }
+
+        .machine-status.processing {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--accent-blue);
+            animation: pulse 1s infinite;
+        }
+
+        .machine-status.done {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--accent-green);
+        }
+
+        /* Raw Data Preview */
+        .raw-data {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            max-height: 120px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        /* Metrics Grid inside card */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .metric-item {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 0.75rem;
+        }
+
+        .metric-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .metric-value {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-top: 0.25rem;
+        }
+
+        .metric-value.running { color: var(--accent-green); }
+        .metric-value.stopped { color: var(--accent-orange); }
+        .metric-value.error { color: var(--accent-red); }
+
+        /* Translation Flow */
+        .translation-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .flow-container {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .flow-box {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .flow-box h4 {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .flow-arrow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--accent-blue);
+        }
+
+        .flow-arrow svg {
+            width: 32px;
+            height: 32px;
+        }
+
+        .flow-arrow span {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .code-block {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .code-block .key { color: var(--accent-cyan); }
+        .code-block .string { color: var(--accent-green); }
+        .code-block .number { color: var(--accent-orange); }
+        .code-block .boolean { color: var(--accent-purple); }
+
+        /* Value Proposition */
+        .value-section {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        .value-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .value-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 1rem;
+            background: var(--gradient-1);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+        }
+
+        .value-card h3 {
+            font-size: 1.125rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .value-card p {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .machines-grid {
+                grid-template-columns: 1fr;
+            }
+            .hero-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .flow-container {
+                flex-direction: column;
+            }
+            .flow-arrow {
+                transform: rotate(90deg);
+            }
+        }
+
+        /* Animations */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: slideIn 0.5s ease forwards;
+        }
+
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+
+        /* Loading spinner */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="logo">
+                <div class="logo-icon">⚡</div>
+                <div>
+                    <h1>UniPLC</h1>
+                    <p>Universal Protocol Translator</p>
+                </div>
+            </div>
+            <div class="status-badge">
+                <div class="status-dot"></div>
+                AI Agent Online
+            </div>
+        </header>
+
+        <!-- Hero Stats -->
+        <div class="hero-stats">
+            <div class="stat-card animate-in">
+                <div class="stat-label">Protocolos Soportados</div>
+                <div class="stat-value blue">3+</div>
+            </div>
+            <div class="stat-card animate-in delay-1">
+                <div class="stat-label">Tiempo de Integración</div>
+                <div class="stat-value green">~30s</div>
+            </div>
+            <div class="stat-card animate-in delay-2">
+                <div class="stat-label">Config Manual</div>
+                <div class="stat-value orange">0</div>
+            </div>
+            <div class="stat-card animate-in delay-3">
+                <div class="stat-label">Precisión IA</div>
+                <div class="stat-value purple">95%+</div>
+            </div>
+        </div>
+
+        <!-- Demo Button -->
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <button class="demo-btn" id="startDemo" onclick="runDemo()">
+                <span>▶</span> Iniciar Demo en Vivo
+            </button>
+        </div>
+
+        <!-- Machines Section -->
+        <div class="section-title">
+            <h2>🏭 Planta Simulada</h2>
+            <div class="line"></div>
+        </div>
+
+        <div class="machines-grid">
+            <!-- Machine 1: Modbus S7-300 -->
+            <div class="machine-card" id="machine1">
+                <div class="machine-header">
+                    <div>
+                        <div class="machine-icon modbus">🔧</div>
+                    </div>
+                    <div class="machine-status waiting" id="status1">Esperando</div>
+                </div>
+                <div class="machine-name">Fresadora Línea 1</div>
+                <div class="machine-protocol">S7-300 · Modbus TCP</div>
+                <div class="raw-data" id="raw1">Datos crudos aparecerán aquí...</div>
+                <div class="metrics-grid" id="metrics1" style="display: none;">
+                    <div class="metric-item">
+                        <div class="metric-label">Temperatura</div>
+                        <div class="metric-value" id="temp1">--</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">RPM</div>
+                        <div class="metric-value" id="rpm1">--</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Estado</div>
+                        <div class="metric-value" id="state1">--</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Confianza</div>
+                        <div class="metric-value" id="conf1">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Machine 2: S7comm S7-1500 -->
+            <div class="machine-card" id="machine2">
+                <div class="machine-header">
+                    <div>
+                        <div class="machine-icon s7comm">⚙️</div>
+                    </div>
+                    <div class="machine-status waiting" id="status2">Esperando</div>
+                </div>
+                <div class="machine-name">Prensa Hidráulica</div>
+                <div class="machine-protocol">S7-1500 · S7comm Plus</div>
+                <div class="raw-data" id="raw2">Datos crudos aparecerán aquí...</div>
+                <div class="metrics-grid" id="metrics2" style="display: none;">
+                    <div class="metric-item">
+                        <div class="metric-label">Presión</div>
+                        <div class="metric-value" id="pressure2">--</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Ciclo</div>
+                        <div class="metric-value" id="cycle2">--</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Estado</div>
+                        <div class="metric-value" id="state2">--</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Confianza</div>
+                        <div class="metric-value" id="conf2">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Machine 3: OPC-UA -->
+            <div class="machine-card" id="machine3">
+                <div class="machine-header">
+                    <div>
+                        <div class="machine-icon opcua">📦</div>
+                    </div>
+                    <div class="machine-status waiting" id="status3">Esperando</div>
+                </div>
+                <div class="machine-name">Empaquetadora</div>
+                <div class="machine-protocol">PLC Genérico · OPC-UA</div>
+                <div class="raw-data" id="raw3">Datos crudos aparecerán aquí...</div>
+                <div class="metrics-grid" id="metrics3" style="display: none;">
+                    <div class="metric-item">
+                        <div class="metric-label">Piezas</div>
+                        <div class="metric-value" id="pieces3">--</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Eficiencia</div>
+                        <div class="metric-value" id="eff3">--</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Estado</div>
+                        <div class="metric-value" id="state3">--</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Confianza</div>
+                        <div class="metric-value" id="conf3">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Translation Flow -->
+        <div class="section-title">
+            <h2>🤖 Traducción IA en Tiempo Real</h2>
+            <div class="line"></div>
+        </div>
+
+        <div class="translation-section">
+            <div class="flow-container">
+                <div class="flow-box">
+                    <h4>📥 Input (Raw Data)</h4>
+                    <div class="code-block" id="rawInput">
+Seleccioná una máquina para ver los datos crudos...
+                    </div>
+                </div>
+                <div class="flow-arrow">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                    <span>AI Translation</span>
+                </div>
+                <div class="flow-box">
+                    <h4>📤 Output (Unified JSON)</h4>
+                    <div class="code-block" id="unifiedOutput">
+{
+  <span class="key">"machine_id"</span>: <span class="string">"..."</span>,
+  <span class="key">"protocol_detected"</span>: <span class="string">"..."</span>,
+  <span class="key">"metrics"</span>: { ... }
+}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Value Proposition -->
+        <div class="section-title">
+            <h2>💡 Propuesta de Valor</h2>
+            <div class="line"></div>
+        </div>
+
+        <div class="value-section">
+            <div class="value-card">
+                <div class="value-icon">🔌</div>
+                <h3>Zero Configuración</h3>
+                <p>Sin mapeo manual de registros, sin TSAP, sin drivers propietarios. La IA interpreta automáticamente.</p>
+            </div>
+            <div class="value-card">
+                <div class="value-icon">💰</div>
+                <h3>90% Menos Costo</h3>
+                <p>Vs. licencias SCADA + integradores + semanas de setup. Democratiza Industria 4.0 para PyMEs.</p>
+            </div>
+            <div class="value-card">
+                <div class="value-icon">🚀</div>
+                <h3>Minutos, No Meses</h3>
+                <p>De dump crudo a dashboard unificado en una llamada API. Time-to-value radical.</p>
+            </div>
+        </div>
+
+        <footer style="text-align: center; margin-top: 4rem; padding: 2rem; color: var(--text-muted);">
+            <p>UniPLC POC · Powered by Claude AI · 2024</p>
+        </footer>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin;
+
+        // Simulated raw data (matching our Python simulators)
+        const simulatedData = {
+            modbus: `=== MODBUS TCP CAPTURE ===
+Timestamp: ${new Date().toISOString()}
+Device: Slave ID 1
+Function: 03 (Read Holding Registers)
+Start: 40001, Count: 6
+
+Raw Response: 01 03 0C 4282 88D3 44CE 0858 0001 0000
+
+Register Dump:
+  40001: 0x4282
+  40002: 0x88D3
+  40003: 0x44CE
+  40004: 0x0858
+  40005: 0x0001
+  40006: 0x0000
+===========================`,
+
+            s7comm: `--- Traditional S7 Driver Attempt (KEPServer) ---
+Connecting to 192.168.1.100:102...
+TSAP: 03.01
+Reading DB10.DBD0 (4 bytes)...
+ERROR: Access denied - Block uses optimized access
+ERROR: Cannot determine memory layout
+----------------------------------------------
+
+=== S7COMM PLUS RESPONSE ===
+PLC: S7-1516-3 PN/DP (FW V2.9.4)
+Timestamp: ${new Date().toISOString()}
+Block: DB_ProcessData (DB10)
+Access Mode: Symbolic (optimized block)
+
+Variables Read:
+  ProcessData.Pressure_Bar: 6.74 [Real]
+  ProcessData.ValveStatus.MainValve: True [Bool]
+  ProcessData.Alarms.HighPressure: False [Bool]
+  ProcessData.Performance.CycleTime: 184 [Int]
+=============================`,
+
+            opcua: `=== OPC-UA CLIENT RESPONSE ===
+Server: opc.tcp://192.168.1.50:4840
+Namespace: http://genericplc.com/UA/
+Timestamp: ${new Date().toISOString()}
+
+Browse Result (ns=2):
+  Node: ns=2;s=Production.Counter.TotalPieces
+    DisplayName: Total Pieces
+    Value: 32241
+    DataType: UInt32
+    Status: Good
+
+  Node: ns=2;s=Production.Efficiency.OEE
+    DisplayName: Overall Equipment Effectiveness
+    Value: 86.9
+    DataType: Double
+    Status: Good
+
+  Node: ns=2;s=Machine.State.Current
+    DisplayName: Machine State
+    Value: 2
+    DataType: Int16
+    EnumMapping: {1: 'Idle', 2: 'Running', 3: 'Paused'}
+==============================`
+        };
+
+        // Simulated unified outputs
+        const simulatedOutputs = {
+            machine1: {
+                machine_id: "linea1-fresadora",
+                protocol_detected: "modbus",
+                timestamp: new Date().toISOString(),
+                metrics: {
+                    temperature_c: 65.2,
+                    rpm: 1456,
+                    status: "running"
+                },
+                alarms: [],
+                raw_confidence: 0.95,
+                interpretation_notes: "Decoded float from registers 40001-40002 (big-endian). Status word 0x0001 = Running."
+            },
+            machine2: {
+                machine_id: "prensa-hidraulica",
+                protocol_detected: "s7comm",
+                timestamp: new Date().toISOString(),
+                metrics: {
+                    pressure_bar: 6.74,
+                    cycle_time_ms: 184,
+                    status: "running"
+                },
+                alarms: [],
+                raw_confidence: 0.92,
+                interpretation_notes: "S7-1500 optimized block detected. Symbolic access used. Valve open, no high pressure alarm."
+            },
+            machine3: {
+                machine_id: "empaquetadora-01",
+                protocol_detected: "opcua",
+                timestamp: new Date().toISOString(),
+                metrics: {
+                    piece_count: 32241,
+                    efficiency_pct: 86.9,
+                    status: "running"
+                },
+                alarms: [],
+                raw_confidence: 0.98,
+                interpretation_notes: "OPC-UA standard format. State enum 2 mapped to 'Running' via EnumMapping."
+            }
+        };
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function formatJSON(obj) {
+            return JSON.stringify(obj, null, 2)
+                .replace(/"([^"]+)":/g, '<span class="key">"$1"</span>:')
+                .replace(/: "([^"]+)"/g, ': <span class="string">"$1"</span>')
+                .replace(/: (\d+\.?\d*)/g, ': <span class="number">$1</span>')
+                .replace(/: (true|false)/g, ': <span class="boolean">$1</span>');
+        }
+
+        async function processMachine(machineNum, rawType, outputKey) {
+            const card = document.getElementById(`machine${machineNum}`);
+            const status = document.getElementById(`status${machineNum}`);
+            const rawEl = document.getElementById(`raw${machineNum}`);
+            const metricsEl = document.getElementById(`metrics${machineNum}`);
+            const rawInput = document.getElementById('rawInput');
+            const unifiedOutput = document.getElementById('unifiedOutput');
+
+            // Show raw data
+            card.classList.add('active');
+            status.textContent = 'Recibiendo datos...';
+            status.className = 'machine-status processing';
+            rawEl.textContent = simulatedData[rawType];
+            rawInput.textContent = simulatedData[rawType];
+
+            await sleep(1000);
+
+            // Processing
+            status.textContent = 'IA Traduciendo...';
+            unifiedOutput.innerHTML = '<div class="spinner"></div> Analizando protocolo...';
+
+            await sleep(2000);
+
+            // Show result
+            const output = simulatedOutputs[`machine${machineNum}`];
+            unifiedOutput.innerHTML = formatJSON(output);
+
+            status.textContent = 'Completado';
+            status.className = 'machine-status done';
+            card.classList.remove('active');
+            card.classList.add('success');
+
+            // Show metrics
+            metricsEl.style.display = 'grid';
+            rawEl.style.display = 'none';
+
+            // Update metric values based on machine
+            if (machineNum === 1) {
+                document.getElementById('temp1').textContent = output.metrics.temperature_c + '°C';
+                document.getElementById('rpm1').textContent = output.metrics.rpm;
+                document.getElementById('state1').textContent = output.metrics.status;
+                document.getElementById('state1').className = 'metric-value ' + output.metrics.status;
+                document.getElementById('conf1').textContent = Math.round(output.raw_confidence * 100) + '%';
+            } else if (machineNum === 2) {
+                document.getElementById('pressure2').textContent = output.metrics.pressure_bar + ' bar';
+                document.getElementById('cycle2').textContent = output.metrics.cycle_time_ms + ' ms';
+                document.getElementById('state2').textContent = output.metrics.status;
+                document.getElementById('state2').className = 'metric-value ' + output.metrics.status;
+                document.getElementById('conf2').textContent = Math.round(output.raw_confidence * 100) + '%';
+            } else if (machineNum === 3) {
+                document.getElementById('pieces3').textContent = output.metrics.piece_count.toLocaleString();
+                document.getElementById('eff3').textContent = output.metrics.efficiency_pct + '%';
+                document.getElementById('state3').textContent = output.metrics.status;
+                document.getElementById('state3').className = 'metric-value ' + output.metrics.status;
+                document.getElementById('conf3').textContent = Math.round(output.raw_confidence * 100) + '%';
+            }
+
+            await sleep(500);
+        }
+
+        async function runDemo() {
+            const btn = document.getElementById('startDemo');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Ejecutando Demo...';
+
+            // Reset all cards
+            for (let i = 1; i <= 3; i++) {
+                const card = document.getElementById(`machine${i}`);
+                const status = document.getElementById(`status${i}`);
+                const raw = document.getElementById(`raw${i}`);
+                const metrics = document.getElementById(`metrics${i}`);
+
+                card.classList.remove('active', 'success');
+                status.textContent = 'Esperando';
+                status.className = 'machine-status waiting';
+                raw.textContent = 'Datos crudos aparecerán aquí...';
+                raw.style.display = 'block';
+                metrics.style.display = 'none';
+            }
+
+            await sleep(500);
+
+            // Process each machine sequentially for dramatic effect
+            await processMachine(1, 'modbus', 'machine1');
+            await sleep(800);
+            await processMachine(2, 's7comm', 'machine2');
+            await sleep(800);
+            await processMachine(3, 'opcua', 'machine3');
+
+            btn.disabled = false;
+            btn.innerHTML = '<span>▶</span> Ejecutar Demo Nuevamente';
+        }
+    </script>
+</body>
+</html>
